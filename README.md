@@ -57,17 +57,5 @@ Example: If the body-temperature extremeties are 95 and 102, the warning-toleran
 
 95 to 95+1.53 Warning: Approaching hypothermia 102-1.53 to 102 Warning: Approaching hyperthermia Same for pulse-rate and SPO2.
 
-Switch case is removed from previous implementation.
 
-vitals.h - Pure functions and data structures for vital sign logic
-
-vitals.cpp - pure functions (no I/O)
-
-monitor.h - Data for boundaries/messages
-
-monitor.cpp - Implementation of composition functions (no I/O)
-
-main.cpp - I/O code: reading values, printing results
-
-test-monitor.cpp - Unit tests covering all conditions
  

@@ -1,54 +1,67 @@
-#include "monitor.h"
+#include "./monitor.h"
+#include <assert.h>
+#include <thread>
+#include <chrono>
+#include <iostream>
+using std::cout, std::flush, std::this_thread::sleep_for, std::chrono::seconds;
+constexpr float TEMP_LOW = 95.0f;
+constexpr float TEMP_HIGH = 102.0f;
+constexpr float PULSE_LOW = 60.0f;
+constexpr float PULSE_HIGH = 100.0f;
+constexpr float SPO2_MIN = 90.0f;
+constexpr int OK = 1;
+constexpr int NOT_OK = 0;
+constexpr float tolerance = TEMP_HIGH * 0.015f;  // 1.5% of upper limit
 
-// Define boundaries with warning tolerance 1.5%
-const Boundary tempBoundary = {95.0f, 102.0f, 1.5f};
-const Boundary pulseBoundary = {60.0f, 100.0f, 1.5f};
-const Boundary spo2Boundary = {90.0f, 100.0f, 1.5f};
-
-// Messages for temperature
-const std::map<Condition, std::string> tempMessages = {
-    {Condition::LOW, "Hypothermia"},
-    {Condition::LOW_WARNING, "Warning: Approaching hypothermia"},
-    {Condition::NORMAL, "Normal"},
-    {Condition::HIGH_WARNING, "Warning: Approaching hyperthermia"},
-    {Condition::HIGH, "Hyperthermia"}
-};
-
-// Messages for pulse
-const std::map<Condition, std::string> pulseMessages = {
-    {Condition::LOW, "Bradycardia"},
-    {Condition::LOW_WARNING, "Warning: Approaching bradycardia"},
-    {Condition::NORMAL, "Normal"},
-    {Condition::HIGH_WARNING, "Warning: Approaching tachycardia"},
-    {Condition::HIGH, "Tachycardia"}
-};
-
-// Messages for spo2
-const std::map<Condition, std::string> spo2Messages = {
-    {Condition::LOW, "Hypoxia"},
-    {Condition::LOW_WARNING, "Warning: Approaching hypoxia"},
-    {Condition::NORMAL, "Normal"},
-    {Condition::HIGH_WARNING, "Slightly high SPO2"},
-    {Condition::HIGH, "Unusual SPO2 level"}
-};
-
-const std::map<std::string, const std::map<Condition, std::string>*> messagesMap = {
-    {"temperature", &tempMessages},
-    {"pulse", &pulseMessages},
-    {"spo2", &spo2Messages}
-};
-
-const std::map<Condition, std::string>& getMessageMap(const std::string& vitalName) {
-    auto it = messagesMap.find(vitalName);
-    if (it != messagesMap.end())
-        return *(it->second);
-    return tempMessages; // fallback
+void blinkAlert() {
+  for (int i = 0; i < 6; i++) {
+    cout << "\r* " << flush;
+    sleep_for(seconds(1));
+    cout << "\r *" << flush;
+    sleep_for(seconds(1));
+  }
+  cout << "\r  \r" << flush;  // Clear line after alert
 }
 
-std::string conditionToMessage(Condition condition, const std::string& vitalName) {
-    const auto& mapRef = getMessageMap(vitalName);
-    auto it = mapRef.find(condition);
-    if (it != mapRef.end())
-        return it->second;
-    return "Unknown condition";
+void temp_hypothermia(float temperature) {
+    if ((temperature >= TEMP_LOW && temperature <= TEMP_LOW + tolerance)) {
+        cout << "Warning: Approaching hypothermia\n";
+    }
+}
+void temp_hyperthermia(float temperature) {
+    if ((temperature >= TEMP_HIGH - tolerance && temperature <= TEMP_HIGH)) {
+        cout << "Warning: Approaching hyperthermia\n";
+    }
+}
+
+int tempOk(float temperature) {
+    if (temperature > TEMP_HIGH || temperature < TEMP_LOW) {
+        cout << "Temperature is critical!\n";
+        blinkAlert();
+        return NOT_OK;
+    }
+    temp_hypothermia(temperature);
+    temp_hyperthermia(temperature);
+    return OK;
+}
+
+int pulseRateOk(float pulseRate) {
+  if (pulseRate < PULSE_LOW || pulseRate > PULSE_HIGH) {
+    cout << "Pulse Rate is out of range!\n";
+    blinkAlert();
+    return NOT_OK;
+  }
+return OK;
+}
+int spo2Ok(float spo2) {
+  if (spo2 < SPO2_MIN) {
+    cout << "Oxygen Saturation out of range!\n";
+    blinkAlert();
+    return NOT_OK;
+  }
+return OK;
+}
+
+int vitalsOk(float temperature, float pulseRate, float spo2) {
+  return tempOk(temperature) && pulseRateOk(pulseRate) && spo2Ok(spo2);
 }

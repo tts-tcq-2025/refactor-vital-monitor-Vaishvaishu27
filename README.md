@@ -46,3 +46,5 @@ Shorten the Semantic distance
 - Functional to express relation between input and output
 - Object oriented to encapsulate state with actions
 - Aspect oriented to capture repeating aspects
+
+Detect and provide warning when Body Temperature approaches 95 or 102 with a tolerance of 1.52
